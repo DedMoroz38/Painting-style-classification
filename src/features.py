@@ -1,37 +1,30 @@
 """Hand-crafted (traditional) feature extraction.
 
-Every function takes a preprocessed image and returns a 1-D numpy array.
-`extract_features()` at the bottom runs all of them and returns a dict
-{group_name: vector}. The group names match config.FEATURE_GROUPS.
-
-Lecture references are given next to each feature.
+`extract_features(path)` at the bottom loads one image, runs every feature
+function on it and returns a dict {group_name: vector}. The group names match
+config.FEATURE_GROUPS. Lecture references are given next to each feature.
 """
 import cv2
 import numpy as np
 
 from config import BORDER_CROP, MAX_SIDE
 
+SIFT = cv2.SIFT_create()   # used only as a DoG keypoint detector (CV15), not for SIFT descriptors
 
-# =====================================================================
+
 # Preprocessing
-# =====================================================================
 def load_and_preprocess(path):
-    """Load an image, crop its border and resize it (keeping aspect ratio).
-
-    Returns (bgr_image, aspect_ratio) or (None, None) if the file is unreadable.
-    """
-    img = cv2.imread(str(path), cv2.IMREAD_COLOR)   # always 3-channel BGR
-    if img is None:
-        return None, None
-
+    img = cv2.imread(str(path))   # 3-channel BGR
     h, w = img.shape[:2]
     aspect_ratio = w / h
 
-    # Crop a thin border: frames and scan margins would otherwise dominate
+    # Crop a thin border (frames)
     dy, dx = int(h * BORDER_CROP), int(w * BORDER_CROP)
     img = img[dy:h - dy, dx:w - dx]
 
-    # Resize so the longer side is MAX_SIDE (never squash to a square)
+    # Resize so the longer side is MAX_SIDE, so features mean the same in every image.
+    # INTER_AREA is best for shrinking, INTER_LINEAR for enlarging (small images).
+    # TOCHECK
     h, w = img.shape[:2]
     scale = MAX_SIDE / max(h, w)
     interp = cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR
@@ -40,45 +33,38 @@ def load_and_preprocess(path):
 
 
 def grid_cells(image, rows=3, cols=3):
-    """Split an image (2-D or 3-D array) into rows x cols blocks (CV13: grid features)."""
+    """Split an image into rows x cols blocks (CV13: grid features)."""
     h, w = image.shape[:2]
     ys = np.linspace(0, h, rows + 1, dtype=int)
     xs = np.linspace(0, w, cols + 1, dtype=int)
     return [image[ys[r]:ys[r + 1], xs[c]:xs[c + 1]] for r in range(rows) for c in range(cols)]
 
 
-def hue_to_unit_vector(hue_opencv):
-    """OpenCV hue is 0..179 (degrees / 2). Hue is an angle, so represent it
-    as (sin, cos): then red at 0 deg and red at 359 deg are close together."""
-    angle = np.deg2rad(hue_opencv.astype(np.float32) * 2.0)
-    return np.sin(angle), np.cos(angle)
+def mean_hue(hsv):
+    """Average hue, returned as (sin, cos).
+
+    Hue is an angle (OpenCV stores degrees / 2), so it is averaged as a unit
+    vector: then red at 0 deg and red at 358 deg count as the same colour.
+    Pixels are weighted by saturation, because grey pixels have no real hue.
+    """
+    angle = np.deg2rad(hsv[:, :, 0].astype(np.float32) * 2.0)
+    s = hsv[:, :, 1].astype(np.float32) / 255
+    weight = s.sum() + 1e-6   # + 1e-6: some images are completely grey
+    return (s * np.sin(angle)).sum() / weight, (s * np.cos(angle)).sum() / weight
 
 
-# =====================================================================
-# Group A: colour  (CV10 colour spaces, CV13 joint colour histograms)
-# =====================================================================
 def colour_histogram(hsv, bins=(8, 4, 4)):
-    """Joint HSV histogram: 8 hue x 4 saturation x 4 value = 128 bins.
-    Normalised to sum to 1, so it does not depend on image size (CV13)."""
-    hist = cv2.calcHist([hsv], [0, 1, 2], None, list(bins), [0, 180, 0, 256, 0, 256])
-    hist = hist.flatten()
+    hist = cv2.calcHist([hsv], [0, 1, 2], None, list(bins), [0, 180, 0, 256, 0, 256]).flatten()
     return hist / hist.sum()
 
 
 def global_statistics(bgr, hsv, aspect_ratio):
-    """15 global numbers describing palette, brightness and contrast."""
-    h = hsv[:, :, 0]
     s = hsv[:, :, 1].astype(np.float32) / 255
     v = hsv[:, :, 2].astype(np.float32) / 255
 
-    # Average hue, weighted by saturation (hue of grey pixels is meaningless)
-    sin_h, cos_h = hue_to_unit_vector(h)
-    weight = s.sum() + 1e-6
-    hue_sin = (s * sin_h).sum() / weight
-    hue_cos = (s * cos_h).sum() / weight
+    hue_sin, hue_cos = mean_hue(hsv)
     hue_concentration = np.hypot(hue_sin, hue_cos)   # 1 = one dominant hue, 0 = all hues
 
-    # Colourfulness (Hasler & Suesstrunk 2003, independent reading)
     b, g, r = [c.astype(np.float32) for c in cv2.split(bgr)]
     rg = r - g
     yb = 0.5 * (r + g) - b
@@ -96,21 +82,16 @@ def global_statistics(bgr, hsv, aspect_ratio):
         colourfulness,
         np.log(aspect_ratio),      # log so that 2:1 and 1:2 are symmetric
         (s > 0.5).mean(),          # fraction of strongly saturated pixels
-    ], dtype=np.float32)
+    ])
 
 
 def colour_grid(hsv, rows=3, cols=3):
-    """For each of the 3x3 cells: hue (sin, cos), mean/std of S, mean/std of V.
-    9 cells x 6 = 54 numbers. Captures layout, e.g. gold at the top of icons."""
     features = []
     for cell in grid_cells(hsv, rows, cols):
         s = cell[:, :, 1].astype(np.float32) / 255
         v = cell[:, :, 2].astype(np.float32) / 255
-        sin_h, cos_h = hue_to_unit_vector(cell[:, :, 0])
-        weight = s.sum() + 1e-6
-        features += [(s * sin_h).sum() / weight, (s * cos_h).sum() / weight,
-                     s.mean(), s.std(), v.mean(), v.std()]
-    return np.array(features, dtype=np.float32)
+        features += [*mean_hue(cell), s.mean(), s.std(), v.mean(), v.std()]
+    return np.array(features)
 
 
 # =====================================================================
@@ -126,9 +107,8 @@ def canny_edges(grey):
 
 
 def edge_density(edges):
-    """Fraction of edge pixels: global + each 3x3 cell = 10 numbers."""
     on = edges > 0
-    return np.array([on.mean()] + [cell.mean() for cell in grid_cells(on)], dtype=np.float32)
+    return np.array([on.mean()] + [cell.mean() for cell in grid_cells(on)])
 
 
 def gradient_orientation_histogram(grey_f, bins=8):
@@ -138,7 +118,7 @@ def gradient_orientation_histogram(grey_f, bins=8):
     gy = cv2.Sobel(grey_f, cv2.CV_32F, 0, 1, ksize=3)
     magnitude, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
     hist, _ = np.histogram(angle % 180, bins=bins, range=(0, 180), weights=magnitude)
-    return (hist / (hist.sum() + 1e-6)).astype(np.float32)
+    return hist / (hist.sum() + 1e-6)
 
 
 def multiscale_gradient_stats(grey_f, sigmas=(1, 2, 4)):
@@ -151,7 +131,7 @@ def multiscale_gradient_stats(grey_f, sigmas=(1, 2, 4)):
         gy = cv2.Sobel(smooth, cv2.CV_32F, 0, 1, ksize=3)
         magnitude = cv2.magnitude(gx, gy)
         features += [magnitude.mean(), magnitude.std()]
-    return np.array(features, dtype=np.float32)
+    return np.array(features)
 
 
 def fourier_texture(grey_f, size=256):
@@ -185,7 +165,7 @@ def fourier_texture(grey_f, size=256):
     shifted = (angle + 22.5) % 180
     sectors = [power[valid & (shifted >= a) & (shifted < a + 45)].sum() / total
                for a in (0, 45, 90, 135)]
-    return np.array(bands + sectors, dtype=np.float32)
+    return np.array(bands + sectors)
 
 
 # =====================================================================
@@ -198,8 +178,8 @@ def hough_line_features(edges):
     h, w = edges.shape
     lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi / 180, threshold=50,
                             minLineLength=int(0.05 * max(h, w)), maxLineGap=5)
-    if lines is None:
-        return np.zeros(5, dtype=np.float32)
+    if lines is None:   # about 3 % of the paintings have no straight lines
+        return np.zeros(5)
 
     x1, y1, x2, y2 = lines[:, 0, :].T.astype(np.float32)
     lengths = np.hypot(x2 - x1, y2 - y1)
@@ -216,7 +196,7 @@ def hough_line_features(edges):
         lengths[horizontal].sum() / total_length,
         lengths[vertical].sum() / total_length,
         lengths[diagonal].sum() / total_length,
-    ], dtype=np.float32)
+    ])
 
 
 # =====================================================================
@@ -228,29 +208,18 @@ def harris_features(grey_f):
     response = cv2.cornerHarris(grey_f, blockSize=2, ksize=3, k=0.04)
     local_max = response == cv2.dilate(response, np.ones((3, 3), np.uint8))
     corners = (response > 0.01 * response.max()) & local_max
-
-    h, w = grey_f.shape
-    if corners.sum() == 0:
-        return np.zeros(3, dtype=np.float32)
     strength = np.log10(response[corners] + 1e-12)
-    return np.array([corners.sum() / (h * w) * 1e4, strength.mean(), strength.std()], dtype=np.float32)
-
-
-_SIFT = None  # created lazily (one per worker process)
+    h, w = grey_f.shape
+    return np.array([corners.sum() / (h * w) * 1e4, strength.mean(), strength.std()])
 
 
 def dog_blob_features(grey_u8):
-    """DoG blob detector (CV15). OpenCV's SIFT *detector* finds extrema in a
-    DoG scale space; we only use the keypoint positions/sizes, not SIFT descriptors.
+    """DoG blob detector (CV15): extrema in a Difference-of-Gaussian scale space.
     Returns blob counts per 10k pixels in 5 size ranges = brushstroke-size distribution."""
-    global _SIFT
-    if _SIFT is None:
-        _SIFT = cv2.SIFT_create()
-    keypoints = _SIFT.detect(grey_u8, None)
-    sizes = np.array([kp.size for kp in keypoints], dtype=np.float32)
+    sizes = [kp.size for kp in SIFT.detect(grey_u8, None)]
     counts, _ = np.histogram(sizes, bins=[0, 4, 8, 16, 32, np.inf])
     h, w = grey_u8.shape
-    return (counts / (h * w) * 1e4).astype(np.float32)
+    return counts / (h * w) * 1e4
 
 
 # =====================================================================
@@ -268,10 +237,10 @@ def region_features(bgr, k=8, work_side=128, top_n=10):
     # Work on a small copy: k-means on 260k pixels per image would be slow
     h, w = bgr.shape[:2]
     scale = work_side / max(h, w)
-    small = cv2.resize(bgr, (max(1, round(w * scale)), max(1, round(h * scale))), interpolation=cv2.INTER_AREA)
+    small = cv2.resize(bgr, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
     lab = cv2.cvtColor(small, cv2.COLOR_BGR2LAB).reshape(-1, 3).astype(np.float32)
 
-    cv2.setRNGSeed(0)
+    cv2.setRNGSeed(0)   # same clusters every run
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
     _, labels, _ = cv2.kmeans(lab, k, None, criteria, 1, cv2.KMEANS_PP_CENTERS)
     labels = labels.reshape(small.shape[:2])
@@ -287,9 +256,6 @@ def region_features(bgr, k=8, work_side=128, top_n=10):
             area = stats[i, cv2.CC_STAT_AREA]
             if area >= min_area:
                 regions.append((area, comp == i))
-
-    if not regions:
-        return np.zeros(6, dtype=np.float32)
 
     areas = np.array([a for a, _ in regions], dtype=np.float32)
 
@@ -312,18 +278,14 @@ def region_features(bgr, k=8, work_side=128, top_n=10):
         np.mean(compactness),
         np.log(np.mean(irregularity)),
         cluster_share.max(),
-    ], dtype=np.float32)
+    ])
 
 
 # =====================================================================
 # Run everything
 # =====================================================================
 def extract_features(path):
-    """Return {group_name: feature vector} for one image, or None if unreadable."""
     bgr, aspect_ratio = load_and_preprocess(path)
-    if bgr is None:
-        return None
-
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
     grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
     grey_f = grey.astype(np.float32) / 255

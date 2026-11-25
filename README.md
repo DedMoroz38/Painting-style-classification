@@ -22,7 +22,7 @@ Both pipelines are scored on exactly the same test images. Each style is classif
 
 | File | What it does |
 |---|---|
-| `config.py` | All settings. `TASK` (5 or 13) is set with an environment variable. |
+| `config.py` | All settings: paths, classes, image size, feature groups, visual-word settings, CV folds. |
 | `features.py` | The hand-crafted feature groups: colour, edges and texture, Hough lines, Harris and DoG points, k-means regions. |
 | `extract_features.py` | Step 1. Writes `outputs/features*.npz`. |
 | `bovw.py` | Step 1b. Bag of visual words built from DoG points, hand-written Sobel descriptors and a k-means vocabulary. |
@@ -30,17 +30,19 @@ Both pipelines are scored on exactly the same test images. Each style is classif
 | `train.py` | Step 2. Grid search with cross-validation on the training set only. |
 | `evaluate.py` | Step 3. One-off test-set report, confusion matrix and feature-group importance. |
 | `ablation.py` | Measures which feature groups help. |
-| `save_version.py` | Snapshots code and results to `versions/<name>/`. |
+| `report_figures.py` | Optional. Figures and tables for the report (`report/figures/`), including the per-class feature-group importance. |
 
-Run from the project root. Leave out `TASK=13` for the 5-class task.
+Run from the project root:
 
 ```bash
-TASK=13 python src/extract_features.py
-TASK=13 python src/bovw.py
-TASK=13 python src/train.py --model svm --name svm_no_grid \
+python src/extract_features.py
+python src/bovw.py
+python src/train.py --model svm --name svm_no_grid \
     --groups colour_hist global_stats colour_grid edges_texture lines interest_points regions bovw
-TASK=13 python src/evaluate.py --model svm_no_grid
+python src/evaluate.py --model svm_no_grid
 ```
+
+The code covers the 13-class task. The v1, v2 and 5-class results in the table come from earlier code, which is kept in the first commit of this repository.
 
 ## Deep baseline (`deep/`)
 
@@ -61,4 +63,3 @@ The following are left out because of their size or copyright. They can all be r
 - embeddings
 - images of misclassified paintings
 
-`versions/` keeps the code and reports for each version.

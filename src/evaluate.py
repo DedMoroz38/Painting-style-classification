@@ -44,13 +44,12 @@ def save_report(y_true, y_pred, bundle, out_dir):
 
 
 def save_confusion_matrix(y_true, y_pred, out_dir):
-    big = len(CLASSES) > 5
-    fig, axes = plt.subplots(1, 2, figsize=(26, 11) if big else (13, 5.5))
+    fig, axes = plt.subplots(1, 2, figsize=(26, 11))
     for ax, normalize, title in [(axes[0], None, "Counts"), (axes[1], "true", "Row-normalised (recall)")]:
         cm = confusion_matrix(y_true, y_pred, normalize=normalize)
         ConfusionMatrixDisplay(cm, display_labels=SHORT_NAMES).plot(
             ax=ax, cmap="Blues", colorbar=False, values_format=".2f" if normalize else "d",
-            xticks_rotation=45 if big else "horizontal")
+            xticks_rotation=45)
         ax.set_title(title)
         ax.set_xlabel("Predicted")
         ax.set_ylabel("True")
@@ -126,7 +125,7 @@ def main():
     if args.no_importance:
         print(f"\nSaved results to {out_dir}")
         return
-    repeats = 5 if len(y_test) < 2000 else 2   # SVM prediction on 8,500 images is slow
+    repeats = 2   # SVM prediction on 8,500 test images is slow
     importance = group_importance(model, X_test, y_test, group_sizes, bundle["groups"], test_f1, repeats)
     importance.to_csv(out_dir / "group_importance.csv", index=False)
     print("Feature-group importance (drop in test macro-F1 when the group is shuffled):")

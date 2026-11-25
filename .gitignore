@@ -6,16 +6,12 @@ docs/
 
 # ---- large generated files (reproducible by running the scripts)
 outputs/features*.npz
-outputs/bovw_vocabulary_*.npy
+outputs/bovw_vocabulary*.npy
 outputs/models*/*.joblib
 outputs/deep/embeddings/
 # grids of WikiArt paintings (image copyright)
 **/misclassified.png
 
-# ---- version snapshots: keep code + notes + reports, not models/features
-versions/*/outputs/features*.npz
-versions/*/outputs/bovw_vocabulary_*.npy
-versions/*/outputs/models*/*.joblib
 
 # ---- local / editor / python
 .claude/settings.local.json

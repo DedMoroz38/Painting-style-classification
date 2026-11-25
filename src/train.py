@@ -1,4 +1,4 @@
-"""Step 2: train a classifier on the training split, tuning it with 5-fold CV.
+"""Step 2: train a classifier on the training split, tuning it with cross-validation.
 
 The test split is NOT used here. evaluate.py uses it afterwards.
 
@@ -41,7 +41,7 @@ def main():
     print(f"Model: {args.model}   groups: {', '.join(args.groups)}")
     print(f"Training images: {len(train_idx)}   feature dims: {X.shape[1]}")
 
-    # 2. Grid search with stratified 5-fold cross-validation, scored by macro-F1
+    # 2. Grid search with stratified k-fold cross-validation (CV_FOLDS), scored by macro-F1
     search = GridSearchCV(
         estimator=make_pipeline(args.model, group_sizes),
         param_grid=PARAM_GRIDS[args.model],

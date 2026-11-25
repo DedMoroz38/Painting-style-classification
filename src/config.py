@@ -1,42 +1,25 @@
 """All settings for the project in one place.
 
 Change things here rather than inside the other scripts.
-
-Two tasks, chosen with the TASK environment variable (default 5):
-    python src/train.py --model svm             # 5 classes  (data/wikiart5)
-    TASK=13 python src/train.py --model svm     # 13 classes (data/complete_data)
 """
-import os
 from pathlib import Path
-
-TASK = os.environ.get("TASK", "5")
-assert TASK in ("5", "13"), "TASK must be 5 or 13"
 
 # ---------------------------------------------------------------- paths
 PROJECT_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = PROJECT_DIR / "data" / "complete_data"     # one sub-folder per class
 OUTPUT_DIR = PROJECT_DIR / "outputs"
-if TASK == "5":
-    DATA_DIR = PROJECT_DIR / "data" / "wikiart5"      # one sub-folder per class
-    FEATURES_FILE = OUTPUT_DIR / "features.npz"       # written by extract_features.py
-    MODELS_DIR = OUTPUT_DIR / "models"                # written by train.py
-    RESULTS_DIR = OUTPUT_DIR / "results"              # written by evaluate.py / ablation.py
-else:
-    DATA_DIR = PROJECT_DIR / "data" / "complete_data"
-    FEATURES_FILE = OUTPUT_DIR / "features_13.npz"
-    MODELS_DIR = OUTPUT_DIR / "models_13"
-    RESULTS_DIR = OUTPUT_DIR / "results_13"
+FEATURES_FILE = OUTPUT_DIR / "features.npz"           # written by extract_features.py and bovw.py
+MODELS_DIR = OUTPUT_DIR / "models"                    # written by train.py
+RESULTS_DIR = OUTPUT_DIR / "results"                  # written by evaluate.py / ablation.py
 
-# For 13 classes the test set is taken from the deep pipeline's index, so both
-# pipelines are tested on exactly the same 8,500 images.
-DEEP_INDEX_FILE = OUTPUT_DIR / "deep" / "index.csv"
+# The train/test split comes from the deep pipeline's index file,
+# so both pipelines are tested on exactly the same images.
+SPLIT_FILE = OUTPUT_DIR / "deep" / "index.csv"
 
 # ---------------------------------------------------------------- classes
-if TASK == "5":
-    CLASSES = ["Japanese_Art", "Western_Medieval", "Baroque", "Rococo", "Expressionism"]
-else:
-    CLASSES = ["Academic_Art", "Art_Nouveau", "Baroque", "Expressionism", "Japanese_Art",
-               "Neoclassicism", "Primitivism", "Realism", "Renaissance", "Rococo",
-               "Romanticism", "Symbolism", "Western_Medieval"]
+CLASSES = ["Academic_Art", "Art_Nouveau", "Baroque", "Expressionism", "Japanese_Art",
+           "Neoclassicism", "Primitivism", "Realism", "Renaissance", "Rococo",
+           "Romanticism", "Symbolism", "Western_Medieval"]
 
 # ---------------------------------------------------------------- preprocessing
 BORDER_CROP = 0.04      # crop 4 % from every side (removes frames / scan margins)
@@ -61,12 +44,10 @@ FEATURE_GROUPS = [
 HISTOGRAM_GROUPS = ["colour_hist", "bovw", "bovw_grid"]
 
 # ---------------------------------------------------------------- bag of visual words (bovw.py)
-# v2: 200 words, 300 points, no grid  ->  v3: 500 words, 600 points, + 2x2 grid
 BOVW_WORDS = 500          # vocabulary size (k in k-means)
 BOVW_MAX_POINTS = 600     # strongest DoG keypoints used per image
 BOVW_VOCAB_IMAGES = 3000  # training images sampled to build the vocabulary
 
 # ---------------------------------------------------------------- evaluation
 RANDOM_SEED = 42
-TEST_SIZE = 0.2         # 80 % train / 20 % held-out test
-CV_FOLDS = 5 if TASK == "5" else 3   # CV folds on the training set (3 for 13 classes: 7x more data)
+CV_FOLDS = 3            # cross-validation folds on the training set

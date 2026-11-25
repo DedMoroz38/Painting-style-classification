@@ -1,6 +1,6 @@
 """Step 4: ablation study, i.e. which feature groups actually help?
 
-Uses 5-fold CV on the TRAINING split only (the test split is never touched),
+Uses k-fold CV on the TRAINING split only (the test split is never touched),
 with one fixed classifier so that only the features change between rows.
 
 Part 1, "build-up": add feature groups one step at a time (plan section 6).

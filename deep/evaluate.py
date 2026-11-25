@@ -45,8 +45,8 @@ def main():
         text += (f"Without {(~clean).sum()} near-duplicate test images: "
                  f"accuracy {accuracy_score(y[clean], p[clean]):.3f}, "
                  f"macro-F1 {f1_score(y[clean], p[clean], average='macro'):.3f}\n")
-    trad = PROJECT_DIR / "outputs" / "results" / "svm" / "report.txt"
-    if classes == CLASSES_5 and trad.exists():
+    trad = PROJECT_DIR / "outputs" / "results" / "svm_no_grid" / "report.txt"   # final traditional model
+    if classes == CLASSES_13 and trad.exists():
         line = next(l for l in trad.read_text().splitlines() if l.startswith("TEST macro-F1"))
         text += f"(Traditional SVM, same test set: {line.split(':')[1].strip()} macro-F1)\n"
     text += "\n" + classification_report(y, p, labels=range(len(classes)), target_names=classes, digits=3)

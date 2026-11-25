@@ -11,8 +11,7 @@ Built only from techniques in the lecture notes:
                      (WHERE the words occur: e.g. sky at the top, figures in the centre)
 
 Run after extract_features.py (it needs the train/test split and the image paths):
-    python src/bovw.py              # 5 classes
-    TASK=13 python src/bovw.py      # 13 classes
+    python src/bovw.py
 """
 import time
 import zlib
@@ -23,27 +22,25 @@ import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 
 from config import (BOVW_MAX_POINTS, BOVW_VOCAB_IMAGES, BOVW_WORDS, FEATURES_FILE, OUTPUT_DIR,
-                    RANDOM_SEED, TASK)
+                    RANDOM_SEED)
 from dataset import load_features, split_indices
-from features import load_and_preprocess
+from features import SIFT, load_and_preprocess
 
 CELLS, BINS = 4, 8          # 4x4 grid of cells, 8 orientation bins per cell -> 128 numbers
 DESC_DIM = CELLS * CELLS * BINS
 
 
 # ---------------------------------------------------------------- descriptors
-NO_POINTS = (np.zeros((0, DESC_DIM), np.float32), np.zeros((0, 2), np.float32))
+NO_POINTS = (np.zeros((0, DESC_DIM), np.float32), np.zeros((0, 2), np.float32))   # 2 images have no keypoints
 
 
 def describe_image(path):
     """Return (descriptors (n, 128), positions (n, 2) as (x, y) fractions of the image size)."""
     bgr, _ = load_and_preprocess(path)
-    if bgr is None:
-        return NO_POINTS
     grey = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
 
-    # 1. DoG keypoints (CV15); OpenCV's SIFT *detector* only, as in features.py
-    keypoints = cv2.SIFT_create().detect(grey, None)
+    # 1. DoG keypoints (CV15), with the same detector as in features.py
+    keypoints = SIFT.detect(grey, None)
     keypoints = sorted(keypoints, key=lambda kp: -kp.response)[:BOVW_MAX_POINTS]
 
     # 2. Sobel gradients for the whole image, once (L5-L7)
@@ -130,7 +127,7 @@ def main():
     kmeans = MiniBatchKMeans(n_clusters=BOVW_WORDS, batch_size=4096, n_init=3,
                              random_state=RANDOM_SEED).fit(sample)
     vocab = kmeans.cluster_centers_.astype(np.float32)
-    np.save(OUTPUT_DIR / f"bovw_vocabulary_{TASK}.npy", vocab)
+    np.save(OUTPUT_DIR / "bovw_vocabulary.npy", vocab)
 
     # 2. Encode every image as histograms of visual words
     whole, grid = [], []

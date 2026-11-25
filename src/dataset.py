@@ -12,13 +12,12 @@ import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from config import DEEP_INDEX_FILE, FEATURES_FILE, HISTOGRAM_GROUPS, RANDOM_SEED, TASK, TEST_SIZE
+from config import FEATURES_FILE, HISTOGRAM_GROUPS, RANDOM_SEED, SPLIT_FILE
 
 
 # ---------------------------------------------------------------- data
@@ -48,22 +47,17 @@ def build_matrix(data, groups):
 
 
 def split_indices(data):
-    """Fixed train/test split. Always returns the same indices.
+    """Fixed train/test split (80/20). Always returns the same indices.
 
-    5 classes : stratified 80/20 split.
-    13 classes: the test images of the deep pipeline (outputs/deep/index.csv), so the
-                two pipelines are compared on exactly the same test set. The deep
-                pipeline's 'val' images are used here as training data (we tune by CV).
+    The test images are the ones marked 'test' in SPLIT_FILE, so the traditional
+    and deep pipelines are compared on exactly the same test set. Everything else
+    is training data (hyper-parameters are tuned by cross-validation on it).
     """
-    labels = data["labels"]
-    indices = np.arange(len(labels))
-    if TASK == "5":
-        return train_test_split(indices, test_size=TEST_SIZE, stratify=labels,
-                                random_state=RANDOM_SEED)
-    index = pd.read_csv(DEEP_INDEX_FILE)
-    test_paths = set(index.loc[index["split13"] == "test", "rel_path"])
-    rel_paths = [f"{Path(p).parent.name}/{Path(p).name}" for p in data["paths"]]
-    is_test = np.array([p in test_paths for p in rel_paths])
+    index = pd.read_csv(SPLIT_FILE)
+    test_images = set(index.loc[index["split13"] == "test", "rel_path"])
+    image_names = [f"{Path(p).parent.name}/{Path(p).name}" for p in data["paths"]]   # "Class/file.jpg"
+    is_test = np.array([name in test_images for name in image_names])
+    indices = np.arange(len(image_names))
     return indices[~is_test], indices[is_test]
 
 
@@ -101,25 +95,16 @@ PARAM_GRIDS = {
         "clf__n_neighbors": [1, 3, 5, 9, 15, 25],
         "clf__weights": ["uniform", "distance"],
     },
-    "svm": {
-        "pca": ["passthrough", PCA(n_components=0.95, random_state=RANDOM_SEED)],
-        "clf__C": [0.1, 1, 10, 100],
-        "clf__gamma": ["scale", 0.01, 0.03, 0.1, 0.3, 1],
+    "svm": {   # small grid: an RBF SVM on ~34k images takes minutes per fit
+        "pca": ["passthrough"],
+        "clf__C": [3, 10, 30],
+        "clf__gamma": ["scale"],
     },
     "rf": {   # trees don't need scaling or PCA
         "clf__max_features": ["sqrt", 0.2],
         "clf__min_samples_leaf": [1, 3],
     },
 }
-
-# 13 classes: an RBF SVM costs ~O(n^2), so the full grid would take many hours.
-# Search a small grid around the 5-class winner (C=10, gamma='scale', no PCA).
-if TASK == "13":
-    PARAM_GRIDS["svm"] = {
-        "pca": ["passthrough"],
-        "clf__C": [3, 10, 30],
-        "clf__gamma": ["scale"],
-    }
 
 
 def make_pipeline(model_name, group_sizes):
