@@ -1,0 +1,11 @@
+v3_pyramid  (2026-11-23 21:34)
+500 words, 600 points, + 2x2 spatial pyramid. svm = all groups (incl. bovw_grid); svm_no_grid = without bovw_grid (RECOMMENDED final model: same score, 4x cheaper). 13-class svm: group importance skipped (too slow). knn/rf unchanged from v1.
+
+results/knn: TEST macro-F1: 0.631
+results/rf: TEST macro-F1: 0.695
+results/svm: TEST macro-F1: 0.775
+results/svm_no_grid: TEST macro-F1: 0.769
+results_13/knn: TEST macro-F1: 0.439
+results_13/rf: TEST macro-F1: 0.484
+results_13/svm: TEST macro-F1: 0.612
+results_13/svm_no_grid: TEST macro-F1: 0.610

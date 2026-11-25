@@ -1,0 +1,27 @@
+Model: svm
+Feature groups: colour_hist, global_stats, colour_grid, edges_texture, lines, interest_points, regions, bovw
+Best params: {'clf__C': 10, 'clf__gamma': 'scale', 'pca': 'passthrough'}
+CV macro-F1 (training set): 0.575
+
+TEST accuracy: 0.624
+TEST macro-F1: 0.610
+
+                  precision    recall  f1-score   support
+
+    Academic_Art      0.445     0.391     0.416       261
+     Art_Nouveau      0.613     0.682     0.646       607
+         Baroque      0.561     0.676     0.613      1062
+   Expressionism      0.617     0.614     0.615       521
+    Japanese_Art      0.792     0.752     0.772       447
+   Neoclassicism      0.782     0.681     0.728       623
+     Primitivism      0.693     0.623     0.656       265
+         Realism      0.599     0.644     0.620      1075
+     Renaissance      0.640     0.687     0.662      1238
+          Rococo      0.540     0.446     0.489       504
+     Romanticism      0.615     0.602     0.609      1363
+       Symbolism      0.536     0.295     0.380       302
+Western_Medieval      0.796     0.655     0.719       232
+
+        accuracy                          0.624      8500
+       macro avg      0.633     0.596     0.610      8500
+    weighted avg      0.626     0.624     0.622      8500

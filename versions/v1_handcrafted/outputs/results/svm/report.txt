@@ -1,0 +1,19 @@
+Model: svm
+Feature groups: colour_hist, global_stats, colour_grid, edges_texture, lines, interest_points, regions
+Best params: {'clf__C': 10, 'clf__gamma': 'scale', 'pca': 'passthrough'}
+CV macro-F1 (training set): 0.726
+
+TEST accuracy: 0.732
+TEST macro-F1: 0.731
+
+                  precision    recall  f1-score   support
+
+    Japanese_Art      0.781     0.820     0.800       200
+Western_Medieval      0.832     0.865     0.848       200
+         Baroque      0.657     0.660     0.658       200
+          Rococo      0.679     0.625     0.651       200
+   Expressionism      0.701     0.690     0.695       200
+
+        accuracy                          0.732      1000
+       macro avg      0.730     0.732     0.731      1000
+    weighted avg      0.730     0.732     0.731      1000

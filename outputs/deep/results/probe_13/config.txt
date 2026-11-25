@@ -1,0 +1,5 @@
+features=clip
+head=mlp
+weight_decay=0.0001
+val_macro_f1=0.9034
+specialist=Neoclassicism vs Rococo used=True

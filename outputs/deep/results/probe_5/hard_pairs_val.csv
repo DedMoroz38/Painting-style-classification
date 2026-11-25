@@ -1,0 +1,9 @@
+class_a,class_b,confusion,a_as_b,b_as_a
+Baroque,Rococo,0.08,0.04,0.04
+Japanese_Art,Expressionism,0.04,0.03,0.01
+Western_Medieval,Baroque,0.01,0.01,0.0
+Rococo,Expressionism,0.01,0.0,0.01
+Japanese_Art,Western_Medieval,0.0,0.0,0.0
+Japanese_Art,Baroque,0.0,0.0,0.0
+Japanese_Art,Rococo,0.0,0.0,0.0
+Western_Medieval,Rococo,0.0,0.0,0.0

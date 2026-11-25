@@ -1,0 +1,30 @@
+Run: probe_13
+features=clip
+head=mlp
+weight_decay=0.0001
+val_macro_f1=0.9034
+specialist=Neoclassicism vs Rococo used=True
+
+TEST accuracy: 0.904
+TEST macro-F1: 0.901
+Without 161 near-duplicate test images: accuracy 0.903, macro-F1 0.899
+
+                  precision    recall  f1-score   support
+
+    Academic_Art      0.737     0.847     0.788       261
+     Art_Nouveau      0.927     0.926     0.927       607
+         Baroque      0.909     0.907     0.908      1062
+   Expressionism      0.916     0.964     0.939       521
+    Japanese_Art      0.977     0.960     0.968       447
+   Neoclassicism      0.881     0.888     0.884       623
+     Primitivism      0.956     0.981     0.968       265
+         Realism      0.894     0.900     0.897      1075
+     Renaissance      0.945     0.951     0.948      1238
+          Rococo      0.880     0.829     0.854       504
+     Romanticism      0.913     0.844     0.877      1363
+       Symbolism      0.739     0.851     0.791       302
+Western_Medieval      0.954     0.983     0.968       232
+
+        accuracy                          0.904      8500
+       macro avg      0.894     0.910     0.901      8500
+    weighted avg      0.906     0.904     0.905      8500

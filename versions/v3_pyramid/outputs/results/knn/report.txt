@@ -1,0 +1,19 @@
+Model: knn
+Feature groups: colour_hist, global_stats, colour_grid, edges_texture, lines, interest_points, regions
+Best params: {'clf__n_neighbors': 9, 'clf__weights': 'distance', 'pca': PCA(n_components=0.95, random_state=42)}
+CV macro-F1 (training set): 0.641
+
+TEST accuracy: 0.631
+TEST macro-F1: 0.631
+
+                  precision    recall  f1-score   support
+
+    Japanese_Art      0.726     0.715     0.720       200
+Western_Medieval      0.756     0.790     0.773       200
+         Baroque      0.554     0.510     0.531       200
+          Rococo      0.494     0.610     0.546       200
+   Expressionism      0.650     0.530     0.584       200
+
+        accuracy                          0.631      1000
+       macro avg      0.636     0.631     0.631      1000
+    weighted avg      0.636     0.631     0.631      1000

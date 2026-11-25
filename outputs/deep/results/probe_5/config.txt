@@ -1,0 +1,5 @@
+features=clip+dino
+head=mlp
+weight_decay=0.0001
+val_macro_f1=0.9721
+specialist=Baroque vs Rococo used=False
