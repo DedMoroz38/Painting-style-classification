@@ -1,9 +1,5 @@
-"""Step 1: compute the features of every image and save them to one file.
+# COMPUTE FEATURES AND SAVE TO output/FEATURES_FILE (should be npz)
 
-    python src/extract_features.py
-
-Training and evaluation then only read this file, so this step runs once.
-"""
 import os
 
 import numpy as np
@@ -16,16 +12,16 @@ GROUPS = [g for g in FEATURE_GROUPS if not g.startswith("bovw")]
 
 
 def main():
-    # 1. Find all images. The folder name is the class.
+    # 1 Find all images
     paths, labels = [], []
     for label, class_name in enumerate(CLASSES):
-        folder = DATA_DIR / class_name
-        for file_name in sorted(os.listdir(folder)):
+        folder = DATA_DIR / class_name # since class name = folder name get folder name
+        for file_name in sorted(os.listdir(folder)): 
             paths.append(str(folder / file_name))
             labels.append(label)
     print(f"Found {len(paths)} images")
 
-    # 2. Compute the features of each image, one image at a time
+    # 2 Compute faetures of each image
     features = {group: [] for group in GROUPS}
     for i, path in enumerate(paths):
         image_features = extract_features(path)
@@ -34,7 +30,8 @@ def main():
         if (i + 1) % 500 == 0:
             print(f"  {i + 1}/{len(paths)} images done")
 
-    # 3. Save: one matrix per feature group (float32 saves space), plus the labels and file paths
+    # 3. Save
+    #one matrix per feature group 
     arrays = {group: np.array(features[group], dtype=np.float32) for group in GROUPS}
     arrays["labels"] = np.array(labels)
     arrays["paths"] = np.array(paths)

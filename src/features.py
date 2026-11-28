@@ -1,9 +1,4 @@
-"""Hand-crafted (traditional) feature extraction.
-
-`extract_features(path)` at the bottom loads one image, runs every feature
-function on it and returns a dict {group_name: vector}. The group names match
-config.FEATURE_GROUPS. Lecture references are given next to each feature.
-"""
+## Basically all preprocessing
 import cv2
 import numpy as np
 
@@ -18,22 +13,23 @@ def load_and_preprocess(path):
     h, w = img.shape[:2]
     aspect_ratio = w / h
 
-    # Crop a thin border (frames)
+    # simple border crop
     dy, dx = int(h * BORDER_CROP), int(w * BORDER_CROP)
     img = img[dy:h - dy, dx:w - dx]
 
-    # Resize so the longer side is MAX_SIDE, so features mean the same in every image.
-    # INTER_AREA is best for shrinking, INTER_LINEAR for enlarging (small images).
-    # TOCHECK
+
+    # Resize so the longer side is MAX_SIDE
+    # and then scale
     h, w = img.shape[:2]
     scale = MAX_SIDE / max(h, w)
     interp = cv2.INTER_AREA if scale < 1 else cv2.INTER_LINEAR
     img = cv2.resize(img, (round(w * scale), round(h * scale)), interpolation=interp)
+
     return img, aspect_ratio
 
 
 def grid_cells(image, rows=3, cols=3):
-    """Split an image into rows x cols blocks (CV13: grid features)."""
+    # Split image into rows x cols blocks 
     h, w = image.shape[:2]
     ys = np.linspace(0, h, rows + 1, dtype=int)
     xs = np.linspace(0, w, cols + 1, dtype=int)
@@ -41,15 +37,10 @@ def grid_cells(image, rows=3, cols=3):
 
 
 def mean_hue(hsv):
-    """Average hue, returned as (sin, cos).
-
-    Hue is an angle (OpenCV stores degrees / 2), so it is averaged as a unit
-    vector: then red at 0 deg and red at 358 deg count as the same colour.
-    Pixels are weighted by saturation, because grey pixels have no real hue.
-    """
+#    returns as (sin, cos) coming from how hue is in degrees/2
     angle = np.deg2rad(hsv[:, :, 0].astype(np.float32) * 2.0)
     s = hsv[:, :, 1].astype(np.float32) / 255
-    weight = s.sum() + 1e-6   # + 1e-6: some images are completely grey
+    weight = s.sum() + 1e-6   
     return (s * np.sin(angle)).sum() / weight, (s * np.cos(angle)).sum() / weight
 
 
@@ -94,12 +85,9 @@ def colour_grid(hsv, rows=3, cols=3):
     return np.array(features)
 
 
-# =====================================================================
-# Group B: edges and texture  (L3 Fourier, L5 Gaussian, L6-L7 Sobel/Canny, CV15 scale space)
-# =====================================================================
 def canny_edges(grey):
-    """Canny edge map (L7). Gaussian smoothing first, then thresholds chosen
-    from the median intensity so they adapt to each image's contrast."""
+    # gaussian blur then median threshold
+    #   return canny edge
     blurred = cv2.GaussianBlur(grey, (5, 5), 1.0)
     median = np.median(blurred)
     low, high = int(max(0, 0.66 * median)), int(min(255, 1.33 * median))

@@ -1,13 +1,19 @@
-"""Step 3: evaluate a trained model on the held-out test split (used only here).
 
-    python src/evaluate.py --model svm
+# for evaluating the trained model.
 
-Writes to outputs/results/<model>/:
-    report.txt               accuracy, macro-F1, per-class precision/recall/F1
-    confusion_matrix.png     counts and row-normalised version
-    misclassified.png        examples of wrong predictions (true -> predicted)
-    group_importance.csv     drop in macro-F1 when each feature group is shuffled
-"""
+# uses --model <model name> as arg e.g.:
+#     python src/evaluate.py --model svm
+
+    
+# find all results in RESULTS_DIR
+# function names should be self explanatory but the overview is:
+'''
+1. report.txt gives basic metrics : acc, precision, recall, F1 per class, and macro F1
+2. row-normalised confusion matrix png file
+3. wrong predictions shown in misclassified.png
+4. group_importance.csv includes drop in macro-F1 when each feature group is shuffled
+'''
+
 import argparse
 
 import cv2

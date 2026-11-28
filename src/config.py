@@ -1,7 +1,12 @@
-"""All settings for the project in one place.
 
-Change things here rather than inside the other scripts.
-"""
+'''
+Just a quick reminder, whenever you add consts to this file can yall
+please comment a default value next to it.
+It really helps when playing around with values for tests and stuff
+
+Cheers,
+Jamie
+'''
 from pathlib import Path
 
 # ---------------------------------------------------------------- paths
@@ -22,8 +27,8 @@ CLASSES = ["Academic_Art", "Art_Nouveau", "Baroque", "Expressionism", "Japanese_
            "Romanticism", "Symbolism", "Western_Medieval"]
 
 # ---------------------------------------------------------------- preprocessing
-BORDER_CROP = 0.04      # crop 4 % from every side (removes frames / scan margins)
-MAX_SIDE = 512          # resize so the longer side is 512 px (aspect ratio kept)
+BORDER_CROP = 0.04      # DEFAULT VALUE: 0.04
+MAX_SIDE = 512          # DEFAULT VALUE: 512
 
 # ---------------------------------------------------------------- feature groups
 # Order matters: this is the order used when building the feature matrix.
@@ -44,9 +49,9 @@ FEATURE_GROUPS = [
 HISTOGRAM_GROUPS = ["colour_hist", "bovw", "bovw_grid"]
 
 # ---------------------------------------------------------------- bag of visual words (bovw.py)
-BOVW_WORDS = 500          # vocabulary size (k in k-means)
-BOVW_MAX_POINTS = 600     # strongest DoG keypoints used per image
-BOVW_VOCAB_IMAGES = 3000  # training images sampled to build the vocabulary
+BOVW_WORDS = 500          # Default value: 500
+BOVW_MAX_POINTS = 600     # Default value: 600
+BOVW_VOCAB_IMAGES = 3000  # Default value: 3000
 
 # ---------------------------------------------------------------- evaluation
 RANDOM_SEED = 42
